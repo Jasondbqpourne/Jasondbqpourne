@@ -1,1 +1,182 @@
-Jasondbqpourne Page
+package
+{
+	import flash.display.Sprite;
+	import flash.display.StageAlign;
+	import flash.display.StageScaleMode;
+	import flash.events.MouseEvent;
+	
+	public class Test2012_03_28_Astar_4 extends Sprite
+	{
+		public var _mapArr:Array;
+		public var _mapArrGe2D:Array;
+		public var _mapLayer:Sprite;
+		public var _startGe:_Ge;
+		public var _endGe:_Ge;
+		public var _openArr:Array;
+		public var _closeArr:Array;
+		public var _finalArr:Array;
+		
+		public function Test2012_03_28_Astar_4()
+		{
+			_init();
+		}
+		public function _init():void
+		{
+			_stageinit();
+			_getMapArr();
+			_createMap();
+			_addMouse();
+		
+		}
+		public function _stageinit():void
+		{
+			stage.align=StageAlign.TOP_LEFT;
+			stage.scaleMode=StageScaleMode.NO_SCALE;
+		}
+		public function _createMap():void
+		{
+			_openArr=[];
+			_closeArr=[];
+			_finalArr=[];
+			_mapLayer=new Sprite();
+			_mapArrGe2D=[];
+			for(var i:int=0;i<_mapArr.length;i++)
+			{
+				var _arr:Array=[];
+				for(var j:int=0;j<_mapArr[0].length;j++)
+				{
+					var _grid:_Ge=new _Ge(j,i,15,_mapArr[i][j]);
+					_grid.x=j*_grid._w;
+					_grid.y=i*_grid._w;
+					_mapLayer.addChild(_grid);
+					_arr.push(_grid);
+					if(_mapArr[i][j]==1)_startGe=_endGe=_grid;
+				}	
+				_mapArrGe2D.push(_arr);
+			}
+			this.addChild(_mapLayer);
+		}
+		public function _addMouse():void
+		{
+			_mapLayer.addEventListener(MouseEvent.CLICK,_clickHandler);
+		}
+		public function _clickHandler(e:MouseEvent):void
+		{  
+			//get endNode
+			var _grid:_Ge=e.target as _Ge;
+			_grid._t=3;
+			_endGe=_grid;
+			_grid._drawGe();
+			
+			//clac statNode  fgh
+			_startGe._g=0;
+			_startGe._h=_V(_startGe,_endGe);
+			_startGe._f=_startGe._h+_startGe._g;
+
+			//color 0 to last _finalArr
+			if(_finalArr.length!=0)_colorPath(0);
+			_openArr=[];
+			_closeArr=[];
+			_finalArr=[];
+			
+			//forbide to click 1,2,3 as endNode
+			if(_endGe._t==3||_endGe._t==1||_endGe._t==2)
+			{
+				_endGe._t=0;
+				_endGe._drawGe();
+			}
+			//aStar clac
+			_findPath();
+			
+			//color _finalArr
+			_colorPath(4);
+		}
+		public function _findPath():void
+		{
+			var centerGe:_Ge=_startGe;
+			while(centerGe!=_endGe)
+			{
+				var _startX:int=centerGe._x==0?0:centerGe._x-1;
+				var _startY:int=centerGe._y==0?0:centerGe._y-1;
+				var _endX:int=centerGe._x==_mapArr[0].length-1?_mapArr[0].length-1:centerGe._x+1;
+				var _endY:int=centerGe._y==_mapArr.length-1?_mapArr.length-1:centerGe._y+1;
+				
+				for(var i:int=_startX;i<=_endX;i++)
+				{
+					for(var j:int=_startY;j<=_endY;j++)
+					{
+						var _8Ge:_Ge=_mapArrGe2D[j][i];
+						if(
+							_8Ge==centerGe
+							||_openArr.indexOf(_8Ge)!=-1
+							||_closeArr.indexOf(_8Ge)!=-1
+							||_8Ge._t==2
+							||_mapArr[centerGe._y][_8Ge._x]==2
+							||_mapArr[_8Ge._y][centerGe._x]==2){continue;}
+						_8Ge._g=_V(_8Ge,centerGe);
+						_8Ge._h=_V(_8Ge,_endGe);
+						_8Ge._f=_8Ge._g+_8Ge._h;
+						_8Ge._p=centerGe;
+						_openArr.push(_8Ge);
+					}
+				}
+				_closeArr.push(centerGe);
+				if(_openArr.length==0)
+				{
+					trace("not find path !");
+					return;
+				}
+				_openArr.sortOn("_f",Array.NUMERIC);
+				centerGe=_openArr.shift();
+			}
+			_finalArr=[];	
+			_finalArr.push(centerGe);	
+			while(centerGe._p!=_startGe)
+			{
+				centerGe=centerGe._p;
+				_finalArr.unshift(centerGe);
+			}
+		}
+		//calc method: euclidian
+		public function _V(g1:_Ge,g2:_Ge):int
+		{
+			var gx:int=(g1._x-g2._x)*10;
+			var gy:int=(g1._y-g2._y)*10;
+			return Math.sqrt(gx*gx+gy*gy)*10;
+		}
+		
+		public function _colorPath(i:int):void
+		{
+			for each(var k:_Ge in _finalArr)
+			{
+				k._t=i;
+				k._drawGe();
+			}
+		}
+		public function _getMapArr():void
+		{
+			_mapArr=[
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,2,2,2,2,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0],
+			[0,0,0,1,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+			[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+			];
+		}
+	}
+}
